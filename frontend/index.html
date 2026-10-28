@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FestPass 2026</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+  #status { padding: 0.5rem; background: #eef2ff; }
+</style>
+</head>
+<body>
+<h1>FestPass 2026 registrations</h1>
+<p id="status">Checking the backendâ€¦</p>
+<form id="form">
+  <input id="name" placeholder="Your name" required>
+  <select id="event">
+    <option>Hackathon</option>
+    <option>Robo Race</option>
+    <option>Tech Quiz</option>
+  </select>
+  <button>Register</button>
+</form>
+<ul id="list"></ul>
+<script>
+const api = (path, options) => fetch("/api/" + path, options).then(r => r.json());
+
+async function refresh() {
+  const status = document.getElementById("status");
+  try {
+    const h = await api("health");
+    status.textContent = `REGNO ${h.regno} | backend ${h.version} on ${h.container} | database ${h.database ? "connected" : "not connected"}`;
+    const rows = await api("registrations");
+    document.getElementById("list").replaceChildren(...(Array.isArray(rows) ? rows : []).map(r => {
+      const li = document.createElement("li");
+      li.textContent = `#${r.id} ${r.name} (${r.event})`;
+      return li;
+    }));
+  } catch (err) {
+    status.textContent = "Backend not reachable";
+  }
+}
+
+document.getElementById("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  await api("registrations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: document.getElementById("name").value, event: document.getElementById("event").value }),
+  });
+  document.getElementById("name").value = "";
+  refresh();
+});
+
+refresh();
+</script>
+</body>
+</html>
